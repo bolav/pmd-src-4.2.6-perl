@@ -3,95 +3,74 @@
  */
 package net.sourceforge.pmd.cpd;
 
-import java.util.ArrayList;
-import java.util.List;
-import net.sourceforge.pmd.cpd.perltoken.*;
+import net.sourceforge.pmd.perl.PerlParserTokenManager;
+import net.sourceforge.pmd.perl.PerlParserConstants;
+import net.sourceforge.pmd.perl.Token;
 
-public class PerlTokenizer extends AbstractTokenizer {
+import java.io.StringReader;
+import java.util.Properties;
 
-    private int lineNumber = 0;
-    private int lineCursor = -1;
-    private int lineLength = 0;
-	private String currentLine;
-	
-	private int tokenCursor = 0;
-	protected List<String> tokens = new ArrayList<String>();
-	private List<String> code;
-	private boolean downcaseString = true;
-	
-	private Token currentToken = new Whitespace();
-	
-	public String getCurrentLine () {
-	    return currentLine;
-	}
-	
-	public char getCurrentChar () {
-	    return currentLine.substring(lineCursor, lineCursor + 1).toCharArray()[0];
-	}
-	
-	private boolean processNextChar () {
-	    if (lineCursor < lineLength) {
-	        lineCursor++;
-	        currentToken.onLineChar(this);
-	        return true;
-	    }
-	    return false;
-	}
-	
-	public void setToken (Token t) {
-	    this.currentToken = t;
-	}
+public class PerlTokenizer implements Tokenizer {
 
-	private boolean processNextLine () {
-	    if (lineNumber >= this.code.size()) {
-	        return false;
-	    }
-	    this.currentLine = this.code.get(this.lineNumber);
-	    this.lineNumber++;
-	    this.lineCursor = -1;
-	    this.lineLength = this.currentLine.length();
-	    System.out.println(this.currentLine);
-	    if (!currentToken.onLineStart(this)) {
-	        while (processNextChar()) {}
-	        return true;
-	    }
-	    return true;
-	}
-	
-	public void newToken (String type, String str) {
-	    System.out.println("newToken " + type + "("+ str +")");
-	    if (type.equals("Whitespace")) {
-	    }
-	    else if (type.equals("Comment")) {
-	    }
-	    else if (type.equals("Pod")) {
-	    }
-	    else {
-	        tokens.add(str);
-	    }
-	    if (!(currentToken instanceof Whitespace)) {
-	        currentToken = new Whitespace();
-	    }
-	}
-	
-	private String getToken () {
-	    while (tokenCursor + 1 > tokens.size()) {
-    	    if (!processNextLine()) {
-    	        return null;
-    	    }
-	    }
+    public static final String IGNORE_LITERALS = "ignore_literals";
+    public static final String IGNORE_IDENTIFIERS = "ignore_identifiers";
 
-	    return tokens.get(tokenCursor++);
-	}
-	
+    private boolean ignoreLiterals;
+    private boolean ignoreIdentifiers;
+
+    public void setProperties(Properties properties) {
+        ignoreLiterals = Boolean.parseBoolean(properties.getProperty(IGNORE_LITERALS, "false"));
+        ignoreIdentifiers = Boolean.parseBoolean(properties.getProperty(IGNORE_IDENTIFIERS, "false"));
+    }
+
     public void tokenize(SourceCode tokens, Tokens tokenEntries) {
-        this.code = tokens.getCode();
-        
-        String token;
-        while ((token = getToken()) != null) {
-            tokenEntries.add(new TokenEntry(token, tokens.getFileName(), lineNumber));
+        /*
+        I'm doing a sort of State pattern thing here where
+        this goes into "discarding" mode when it hits an import or package
+        keyword and goes back into "accumulate mode" when it hits a semicolon.
+        This could probably be turned into some objects.
+        */
+        PerlParserTokenManager tokenMgr = new PerlParserTokenManager(tokens.getCode());
+        Token currentToken = tokenMgr.getNextToken();
+        boolean inDiscardingState = false;
+        while (currentToken.getImage().length() > 0) {
+            if (currentToken.kind == PerlParserConstants.USE || currentToken.kind == PerlParserConstants.PACKAGE) {
+                inDiscardingState = true;
+                currentToken = tokenMgr.getNextToken();
+                continue;
+            }
+
+            if (inDiscardingState && currentToken.kind == PerlParserConstants.SEMICOLON) {
+                inDiscardingState = false;
+            }
+
+            if (inDiscardingState) {
+                currentToken = tokenMgr.getNextToken();
+                continue;
+            }
+
+            if (currentToken.kind != PerlParserConstants.SEMICOLON) {
+                String image = currentToken.getImage();
+                if (ignoreLiterals && (currentToken.kind == PerlParserConstants.STRING_LITERAL 
+                        || currentToken.kind == PerlParserConstants.DECIMAL_LITERAL || currentToken.kind == PerlParserConstants.FLOATING_POINT_LITERAL)) {
+                    image = String.valueOf(currentToken.kind);
+                }
+                if (ignoreIdentifiers && currentToken.kind == PerlParserConstants.IDENTIFIER) {
+                    image = String.valueOf(currentToken.kind);
+                }
+                tokenEntries.add(new TokenEntry(image, tokens.getFileName(), currentToken.beginLine));
+            }
+
+            currentToken = tokenMgr.getNextToken();
         }
         tokenEntries.add(TokenEntry.getEOF());
     }
 
+    public void setIgnoreLiterals(boolean ignore) {
+        this.ignoreLiterals = ignore;
+    }
+
+    public void setIgnoreIdentifiers(boolean ignore) {
+        this.ignoreIdentifiers = ignore;
+    }
 }
