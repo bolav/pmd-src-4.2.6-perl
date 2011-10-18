@@ -24,6 +24,17 @@ public abstract class Token {
       endColumn   = t.endColumn;      
   }
   
+  public void setVars (PerlParserTokenManager t) {
+      if (beginLine == 0) {
+          beginLine = t.getLineNumber();
+      }
+      endLine = t.getLineNumber();
+      if (beginColumn == 0) {
+          beginColumn = t.getLineCursor();
+      }
+      endColumn = t.getLineCursor();
+  }
+  
   public Token (String s, Token t) {
       image = s;
       beginLine   = t.beginLine;
@@ -34,6 +45,10 @@ public abstract class Token {
   
   public String getImage () {
       return image;
+  }
+  
+  public void setImage (String s) {
+      image = s;
   }
   
   public boolean onLineStart (PerlParserTokenManager t) {

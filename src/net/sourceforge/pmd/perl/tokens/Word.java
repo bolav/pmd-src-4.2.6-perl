@@ -7,31 +7,35 @@ import java.util.regex.Pattern;
 import java.util.regex.Matcher;
 
 public class Word extends Token {
-    StringBuffer buf = new StringBuffer();
     Pattern bareword = Pattern.compile("(\\w+(?:(?:\\'|::)\\w+)*(?:::)?).*");
     
-    public Word (char c, Token t) {
+    public Word (Token t) {
         super(t);
-        buf.append(c);
         kind = PerlParserConstants.WORD;
     }
     
-    public String getImage () {
-        return buf.toString();
+    public void checkSpecial () {
+        if (getImage().equals("use")) {
+            kind = PerlParserConstants.USE;
+        }
+        else if (getImage().equals("package")) {
+            kind = PerlParserConstants.PACKAGE;
+        }
     }
     
     public boolean onLineChar (PerlParserTokenManager t) {
         String rest = t.getCurrentLine().substring(t.getLineCursor());
-        System.out.println("rest "+rest);
         Matcher m;
         m = bareword.matcher(rest);
         if (m.matches()) {
-            buf = new StringBuffer(m.group(1));
+            setImage(m.group(1));
             t.incLineCursor(m.group(1).length());
-            endColumn = t.getLineCursor();
+            checkSpecial();
+            setVars(t);
             t.addToken(this);
             return true;
         }
+        System.out.println("Problem");
         return false;
     }
     

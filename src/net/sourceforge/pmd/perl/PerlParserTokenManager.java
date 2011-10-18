@@ -44,13 +44,11 @@ public class PerlParserTokenManager implements PerlParserConstants
 	}
 	
 	public void incLineCursor (int i) {
-	    System.out.println("Adding "+i);
 	    lineCursor += i;
 	}
 	
 	
 	public void addToken(Token t) {
-	    System.out.println("Adding "+t);
 	    tokens.add(t);
 	    setToken(new Whitespace());
 	}
@@ -60,7 +58,7 @@ public class PerlParserTokenManager implements PerlParserConstants
 	}
 
     private boolean processNextChar () {
-	    if (lineCursor + 1 < lineLength) {
+	    if (lineCursor < lineLength) {
 	        currentToken.onLineChar(this);
 	        return true;
 	    }
@@ -71,12 +69,10 @@ public class PerlParserTokenManager implements PerlParserConstants
         if (lineNumber >= this.code.size()) {
 	        return false;
 	    }
-	    System.out.println("Parsing with "+currentToken);
 	    this.currentLine = this.code.get(this.lineNumber);
 	    this.lineNumber++;
 	    this.lineCursor = -1;
 	    this.lineLength = this.currentLine.length();
-	    System.out.println(this.currentLine);
 	    if (!currentToken.onLineStart(this)) {
 	        incLineCursor();
 	        while (processNextChar()) {}

@@ -33,9 +33,14 @@ public class PerlTokenizer implements Tokenizer {
         PerlParserTokenManager tokenMgr = new PerlParserTokenManager(tokens.getCode());
         Token currentToken = tokenMgr.getNextToken();
         boolean inDiscardingState = false;
-        while (currentToken.getImage().length() > 0) {
+        while (currentToken != null) {
             if (currentToken.kind == PerlParserConstants.USE || currentToken.kind == PerlParserConstants.PACKAGE) {
                 inDiscardingState = true;
+                currentToken = tokenMgr.getNextToken();
+                continue;
+            }
+            
+            if ((currentToken.kind == PerlParserConstants.WHITESPACE) || (currentToken.kind == PerlParserConstants.POD)) {
                 currentToken = tokenMgr.getNextToken();
                 continue;
             }
@@ -58,6 +63,7 @@ public class PerlTokenizer implements Tokenizer {
                 if (ignoreIdentifiers && currentToken.kind == PerlParserConstants.IDENTIFIER) {
                     image = String.valueOf(currentToken.kind);
                 }
+                // System.out.println("Adding "+image+" "+tokens.getFileName()+" "+currentToken.beginLine);
                 tokenEntries.add(new TokenEntry(image, tokens.getFileName(), currentToken.beginLine));
             }
 

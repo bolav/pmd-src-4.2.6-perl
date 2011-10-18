@@ -12,6 +12,7 @@ public class Whitespace extends Token {
     Pattern comment    = Pattern.compile("\\s*#.*");
     Pattern pod        = Pattern.compile("^=(\\w+).*");
     StringBuffer buf   = new StringBuffer();
+    boolean hastoken   = false;
     
     public Whitespace() {
         kind = PerlParserConstants.WHITESPACE;        
@@ -50,23 +51,47 @@ public class Whitespace extends Token {
                 return true;                
             }
         }
-        System.out.println("Nothing for "+line);
         return false;
     }
     
     public boolean onLineChar (PerlParserTokenManager t) {
+        setVars(t);
         char c = t.getCurrentChar();
-        if ((c >= 'a') && (c <= 'u')) {
-            t.setToken(new Word(c, this));
-            System.out.println("We have "+c);
+        if (((c >= 'a') && (c <= 'z')) ||
+            ((c >= 'A') && (c <= 'Z'))
+           ) {
+            setToken(t,new Word(this));
         }
-        else if (c == ' ') {
+        else if ((c == ' ') || (c == 9)) {
             buf.append(c);
+            hastoken = true;
+            t.incLineCursor();
+        }
+        else if (c == ';') {
+            addToken(t,new Semicolon(this));
             t.incLineCursor();
         }
         else {
             t.incLineCursor();
         }
         return false;
+    }
+    
+    private void finishMe (PerlParserTokenManager m) {
+        if (hastoken) {
+            m.addToken(new Whitespace(buf.toString(), this));
+        }
+        hastoken = false;
+        buf = new StringBuffer();
+    }
+    
+    private void setToken (PerlParserTokenManager m, Token t) {
+        finishMe(m);
+        m.setToken(t);
+    }
+    
+    private void addToken (PerlParserTokenManager m, Token t) {
+        finishMe(m);
+        m.addToken(t);
     }
 }
