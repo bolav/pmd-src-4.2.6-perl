@@ -7,14 +7,16 @@ import java.util.regex.Pattern;
 import java.util.regex.Matcher;
 
 public class Word extends Token {
-    Pattern bareword = Pattern.compile("(\\w+(?:(?:\\'|::)\\w+)*(?:::)?).*");
+    static Pattern bareword = Pattern.compile("(\\w+(?:(?:\\'|::)\\w+)*(?:::)?).*");
     
     public Word (Token t) {
         super(t);
         kind = PerlParserConstants.WORD;
     }
     
-    public void checkSpecial () {
+    public void checkSpecial (PerlParserTokenManager m) {
+        // TODO: Check that previous is a semicolon! (or nothing)
+        // Token prev = m.getPrevious();
         if (getImage().equals("use")) {
             kind = PerlParserConstants.USE;
         }
@@ -30,7 +32,7 @@ public class Word extends Token {
         if (m.matches()) {
             setImage(m.group(1));
             t.incLineCursor(m.group(1).length());
-            checkSpecial();
+            checkSpecial(t);
             setVars(t);
             t.addToken(this);
             return true;

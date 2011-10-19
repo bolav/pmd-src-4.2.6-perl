@@ -26,11 +26,9 @@ public class Pod extends Token {
         String line = t.getCurrentLine();
         Matcher m;
         m = pod.matcher(line);
-        if (m.matches()) {
-            if (m.group(1).equals("cut")) {
-                t.addToken(this);
-                return true;
-            }
+        if ((m.matches()) && (m.group(1).equals("cut"))) {
+            t.addToken(this);
+            return true;
         }
         buf.append(line);
         buf.append("\n");

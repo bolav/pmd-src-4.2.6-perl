@@ -38,5 +38,12 @@ public class Tokens {
     public List<TokenEntry> getTokens() {
         return tokens;
     }
+    
+    public void print() {
+        System.err.println("tokens");
+        for(int i=0; i<tokens.size(); i++) {
+            System.err.println(tokens.get(i));
+        }
+    }
 
 }

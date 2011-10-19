@@ -13,4 +13,6 @@ public interface PerlParserConstants {
     int POD = 9;
     int WHITESPACE = 10;
     int WORD = 11;
+    int STRUCTURE = 12;
+    int OPERATOR = 13;
 }

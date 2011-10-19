@@ -81,4 +81,8 @@ public class TokenEntry implements Comparable<TokenEntry> {
     public int compareTo(TokenEntry other) {
         return getIndex() - other.getIndex();
     }
+    
+    public String toString() {
+        return "TokenEntry ("+identifier+","+Tokens+")";
+    }
 }

@@ -8,9 +8,9 @@ import net.sourceforge.pmd.perl.PerlParserConstants;
 
 public class Whitespace extends Token {
     
-    Pattern whitespace = Pattern.compile("^\\s*$");
-    Pattern comment    = Pattern.compile("\\s*#.*");
-    Pattern pod        = Pattern.compile("^=(\\w+).*");
+    static Pattern whitespace = Pattern.compile("^\\s*$");
+    static Pattern comment    = Pattern.compile("\\s*#.*");
+    static Pattern pod        = Pattern.compile("^=(\\w+).*");
     StringBuffer buf   = new StringBuffer();
     boolean hastoken   = false;
     
@@ -62,6 +62,13 @@ public class Whitespace extends Token {
            ) {
             setToken(t,new Word(this));
         }
+        else if ((c >= '0') && (c <= '9')) {
+            setToken(t, new Number(this));
+        }
+        else if ((c == '=')) {
+            setToken(t, new Operator(c, this));
+            t.incLineCursor();
+        }
         else if ((c == ' ') || (c == 9)) {
             buf.append(c);
             hastoken = true;
@@ -71,7 +78,18 @@ public class Whitespace extends Token {
             addToken(t,new Semicolon(this));
             t.incLineCursor();
         }
+        else if ((c == '{') ||
+                 (c == '}')
+                ) {
+            addToken(t, new Structure(c, this));
+            t.incLineCursor();
+        }
+        else if ((c == '$')) {
+            setToken(t, new Unknown(c, this));
+            t.incLineCursor();
+        }
         else {
+            // System.out.println("Unknown "+c);
             t.incLineCursor();
         }
         return false;
